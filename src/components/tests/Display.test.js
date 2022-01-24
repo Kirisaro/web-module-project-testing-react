@@ -10,46 +10,55 @@ jest.mock('../../api/fetchShow');
 
 
 const testShow = {
-    name: "Test Show",
-    image:{
-        medium: "https://static.tvmaze.com/uploads/images/medium_portrait/200/501942.jpg",
-        original: "https://static.tvmaze.com/uploads/images/original_untouched/200/501942.jpg"
+    name: "test show",
+    summary: "test summary",
+    seasons: [
+        {
+            id: 0,
+            name: "season 1",
+            episodes: []
         },
-    seasons: [{id: 0, name: "Test Season 1", episodes: []},
-                {id: 1, name: "Test Season 2", episodes: [{
-                   
-                    id:1,
-                    name: "",
-                    image: null,
-                    season: 1,
-                    number: 1,
-                    summary: "Text to test if correct content is passed.",
-                    runtime: 1
-                }]},
-                {id: 2, name: "Test Season 3", episodes: []}],
-    summary: "Test summary text. Lorem ipsum dolor sit amet, consectetur adipisicing elit. Nisi pariatur ratione quos itaque, tempore dolore iste aut veritatis provident dolorem debitis, amet accusamus, quam adipisci distinctio quod eligendi similique ipsum!" 
+        {
+            id: 1,
+            name: "season 2",
+            episodes: []
+        }
+    ]
 }
 
-test('Display component renders without any passed in props', ()=>{
-    render(<Display />);
-    const imageSelector = screen.queryByAltText("header image");
-    expect(imageSelector).toBeInTheDocument();
-});
+test('renders without errors', () => {
+    render(<Display />)
+})
 
+test('render show component when button is clicked', async () => {
+    mockFetchShow.mockResolvedValueOnce(testShow)
+    render(<Display />)
+    const button = screen.getByRole('button')
+    userEvent.click(button)
+    const show = await screen.findByTestId('show-container')
+    expect(show).toBeInTheDocument()
+})
 
-test("calls displayFunc when button is clicked", async ()=>{
-    mockFetchShow.mockResolvedValue(testShow);
-    const mockDisplayFunc = jest.fn();
+test('renders season options matching fetch return when button is clicked', async () => {
+    mockFetchShow.mockResolvedValueOnce(testShow)
+    render(<Display />)
+    const button = screen.getByRole('button')
+    userEvent.click(button)
 
-    render(<Display displayFunc={mockDisplayFunc}/>)
+    await waitFor(() => {
+        const seasonOptions = screen.queryAllByTestId('season-option')
+        expect(seasonOptions).toHaveLength(2)
+    })
+})
 
-    const button = screen.getByRole("button");
-    userEvent.click(button);
+test('displayFunc is called when the fetch button is pressed', async () => {
+    mockFetchShow.mockResolvedValueOnce(testShow)
+    const displayFunc = jest.fn()
+    render(<Display displayFunc={displayFunc} />)
+    const button = screen.getByRole('button')
+    userEvent.click(button)
 
-    await waitFor(()=>{
-        expect(mockDisplayFunc.mock.calls.length === 1).toBeTruthy();
-        expect(mockDisplayFunc.mock.calls.length).toBe(1);
-        expect(mockDisplayFunc.mock.calls).toHaveLength(1);
-        expect(mockDisplayFunc).toHaveBeenCalled();
-    });
-});
+    await waitFor(() => {
+        expect(displayFunc).toHaveBeenCalled()
+    })
+})
